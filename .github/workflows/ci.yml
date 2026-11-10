@@ -30,3 +30,19 @@ jobs:
         with: { node-version: "26" }
       - run: npm ci
       - run: npm run build
+  imagen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t siget-web .
+      - name: Arranque con MySQL
+        run: |
+          docker network create red
+          docker run -d --name db --network red -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=siget mysql:8.4
+          for i in $(seq 1 40); do docker exec db mysqladmin ping -proot --silent && break; sleep 3; done
+          sleep 10
+          docker run -d --name app --network red -p 8000:8000 -e DATABASE_URL=mysql://root:root@db:3306/siget \
+            -e ENTORNO=demo -e ADMIN_PASSWORD=Prueba2026ci -e CARGAR_DATOS_DEMO=1 siget-web
+          for i in $(seq 1 30); do curl -fs localhost:8000/api/salud && break; sleep 3; done
+          curl -fs localhost:8000/ | grep -q "SIGET WEB"
+          docker logs app | tail -20
