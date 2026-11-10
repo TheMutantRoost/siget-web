@@ -1,0 +1,32 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4.12
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: siget_test
+          MYSQL_USER: siget
+          MYSQL_PASSWORD: siget_dev_pw
+        ports: ["3306:3306"]
+        options: --health-cmd="mysqladmin ping -proot" --health-interval=5s --health-retries=20
+    defaults: { run: { working-directory: backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.14" }
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+        env: { DATABASE_URL: "mysql+pymysql://siget:siget_dev_pw@127.0.0.1:3306/siget_test" }
+  frontend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "26" }
+      - run: npm ci
+      - run: npm run build
