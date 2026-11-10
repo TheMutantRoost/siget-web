@@ -39,7 +39,7 @@ api.interceptors.response.use(
         ? datos
         : { codigo: "red", mensaje: "No se pudo conectar con el servidor. Intente de nuevo." };
     const url = error.config?.url ?? "";
-    if (error.response?.status === 401 && !url.includes("/auth/login")) {
+    if (error.response?.status === 401 && !url.includes("/auth/login") && !url.includes("/auth/me")) {
       oyentesSesion.forEach((fn) => fn(normalizado));
     }
     return Promise.reject(normalizado);
